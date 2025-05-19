@@ -1,20 +1,20 @@
 class PhpAT70Zts < Formula
   desc "General-purpose scripting language"
   homepage "https://secure.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/a4ea0fdb28141b4ca8c902d7dfceea9b435fae33.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/d91f3b4e4ff74ed2432010dca9ae9ce5de781670.tar.gz"
   version "7.0.33"
-  sha256 "59e7a3a8c00e063fbc4c1698824751b5ccf6e9432522347073cd8edb0c9ec98e"
+  sha256 "2d80d4186c14aa7e75cca38105359eda808a512a57824462e84e96d5b1be6b5c"
   license "PHP-3.01"
-  revision 2
+  revision 5
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    sha256 arm64_sonoma:   "6da6ba88b38b03dbc3f5b96e175d741c769811e3109a592e875f3d5eb6896859"
-    sha256 arm64_ventura:  "53896d45d17a02d75fbc004a1b3eb1c97784bac74b226200a7b1fa09c1143adc"
-    sha256 arm64_monterey: "5bfcfa7712959d1516dac2e96ec991eae3904a051e7566f429116891c37e2ea3"
-    sha256 ventura:        "3af628fef7dd722e039d69dcbc88d776a424abfcafa680745c3c91fb6e23847c"
-    sha256 monterey:       "d10d93cb4b8ac0df91a55b29ba2b5f059fb687439b7a32cd15105a6904d8387e"
-    sha256 x86_64_linux:   "987649b8141a484305d40fbc6e3e7744d3416dee389f38bdf51ce61fdd7d36a5"
+    rebuild 1
+    sha256 arm64_sequoia: "280b167c21e286d9760ea41d2aee7eea411ffc6e3ad6848a2489a39a69e957c8"
+    sha256 arm64_sonoma:  "93ba568ad6967dad9dfd7e7dc5367a7c7a5b9d782672319ddf75ecb636f64752"
+    sha256 arm64_ventura: "94c67031b8d6e128ea1c3c33371875c4326669bcb90e265912c4b5198856de79"
+    sha256 ventura:       "deaa523f3893418002520fa1b1b660336daf6943c2da1b368e1d38b5a1950dcb"
+    sha256 x86_64_linux:  "6ec4bc945fbd93cc3d8d7d4e0c0aedcd1a1caac02d979720e7669cd58ed067a3"
   end
 
   keg_only :versioned_formula
@@ -27,7 +27,7 @@ class PhpAT70Zts < Formula
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -36,13 +36,17 @@ class PhpAT70Zts < Formula
   depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
+  depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "jpeg"
+  depends_on "krb5"
   depends_on "libpng"
   depends_on "libpq"
   depends_on "libtool"
+  depends_on "libx11"
+  depends_on "libxpm"
   depends_on "libzip"
   depends_on "openldap"
   depends_on "openssl@3"
@@ -75,9 +79,16 @@ class PhpAT70Zts < Formula
       inreplace "main/reentrancy.c", "readdir_r(dirp, entry)", "readdir_r(dirp, entry, result)"
     end
 
+    # icu4c 61.1 compatibility
+    ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
+
     # Workaround for https://bugs.php.net/80310
     ENV.append "CFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
     ENV.append "CXXFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
+
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV.append "CXX", "-std=c++17"
+    ENV.libcxx if ENV.compiler == :clang
 
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
@@ -109,12 +120,6 @@ class PhpAT70Zts < Formula
 
     # API compatibility with tidy-html5 v5.0.0 - https://github.com/htacg/tidy-html5/issues/224
     inreplace "ext/tidy/tidy.c", "buffio.h", "tidybuffio.h"
-
-    # Required due to icu4c dependency
-    ENV.cxx11
-
-    # icu4c 61.1 compatibility
-    ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
 
     config_path = etc/"php/#{php_version}"
     # Prevent system pear config from inhibiting pear install
@@ -167,11 +172,11 @@ class PhpAT70Zts < Formula
       --with-fpm-user=#{fpm_user}
       --with-fpm-group=#{fpm_group}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
+      --with-gd=#{Formula["gd"].opt_prefix}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
+      --with-icu-dir=#{Formula["icu4c@77"].opt_prefix}
       --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
       --with-kerberos#{headers_path}
       --with-layout=GNU
@@ -196,6 +201,7 @@ class PhpAT70Zts < Formula
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-webp-dir=#{Formula["webp"].opt_prefix}
       --with-xmlrpc
+      --with-xpm-dir=#{Formula["libxpm"].opt_prefix}
     ]
 
     if OS.mac?

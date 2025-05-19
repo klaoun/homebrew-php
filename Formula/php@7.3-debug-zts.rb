@@ -1,21 +1,20 @@
 class PhpAT73DebugZts < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/bc9eff539cbcaac98720ab7e8eb73dd5bdffe12c.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/580fe100065f1cd83ac2ad5a6254a1f95dde93ee.tar.gz"
   version "7.3.33"
-  sha256 "83434d34cfeb96c31010fc9e3fdd0e4f67cb3844bf2dffd760afb53270aae286"
+  sha256 "c3bb3db324daed97e2c50f2755462df5b0cb4b912ab5b38c96dc6cfaca92475e"
   license "PHP-3.01"
-  revision 1
+  revision 4
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 4
-    sha256 arm64_sonoma:   "b013a028e597581225ca4713047ba6c85ec7acf5a142d300af2dfda66b8948ea"
-    sha256 arm64_ventura:  "4b49f5d5e10663393ba33fbbcc9cfe3e95989865492ec64dc667d333f126ba41"
-    sha256 arm64_monterey: "26acb3a3301e1db364b3dc7a6279d8fb21c47f91c45b7160aef3c9e40f7dda07"
-    sha256 ventura:        "9608d9d2c9dc998f66f4c1c3bb4340a62094f21c3e0ebca3aa5167de3745cf96"
-    sha256 monterey:       "e65f462ddc2c4179398ed25631d4d1fdf95be69e4ba7e25d205c0272e4f69819"
-    sha256 x86_64_linux:   "03b9acd769b8452d70cc1d5248ca12a5b7c86bb7af6bbd916a96558cff91a572"
+    rebuild 1
+    sha256 arm64_sequoia: "b671e24a8df62300ef697c1cfb3bb93d2e555536b19f4418818b27fa2120511d"
+    sha256 arm64_sonoma:  "ec8d8f42b0ec4bebfa49bfcb2dedd0e6443db5af97fe12639637f291a7087e6b"
+    sha256 arm64_ventura: "c9d43fbb0f080283e3fd33c077e62abafab7ae540c26632985ad0d047d078257"
+    sha256 ventura:       "8d35c8461b17732bb9cc93516e41f27cc87214945691bc41f9708bf4bc3df626"
+    sha256 x86_64_linux:  "2d615e446c600331c8d0f9ed02631d3f91bc5022f45ee70dcad6a826ff25fcbc"
   end
 
   keg_only :versioned_formula
@@ -28,7 +27,7 @@ class PhpAT73DebugZts < Formula
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -38,13 +37,17 @@ class PhpAT73DebugZts < Formula
   depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
+  depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "jpeg"
+  depends_on "krb5"
   depends_on "libpng"
   depends_on "libpq"
   depends_on "libsodium"
+  depends_on "libx11"
+  depends_on "libxpm"
   depends_on "libzip"
   depends_on "openldap"
   depends_on "openssl@3"
@@ -82,6 +85,10 @@ class PhpAT73DebugZts < Formula
       inreplace "main/reentrancy.c", "readdir_r(dirp, entry)", "readdir_r(dirp, entry, result)"
     end
 
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV.append "CXX", "-std=c++17"
+    ENV.libcxx if ENV.compiler == :clang
+
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
 
@@ -110,9 +117,6 @@ class PhpAT73DebugZts < Formula
               "your httpd config to use the prefork MPM"
 
     inreplace "sapi/fpm/php-fpm.conf.in", ";daemonize = yes", "daemonize = no"
-
-    # Required due to icu4c dependency
-    ENV.cxx11
 
     config_path = etc/"php/#{version.major_minor}-debug-zts"
     # Prevent system pear config from inhibiting pear install
@@ -167,11 +171,11 @@ class PhpAT73DebugZts < Formula
       --with-fpm-user=#{fpm_user}
       --with-fpm-group=#{fpm_group}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
+      --with-gd=#{Formula["gd"].opt_prefix}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
+      --with-icu-dir=#{Formula["icu4c@77"].opt_prefix}
       --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
       --with-kerberos#{headers_path}
       --with-layout=GNU
@@ -198,6 +202,7 @@ class PhpAT73DebugZts < Formula
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-webp-dir=#{Formula["webp"].opt_prefix}
       --with-xmlrpc
+      --with-xpm-dir=#{Formula["libxpm"].opt_prefix}
     ]
 
     if OS.mac?

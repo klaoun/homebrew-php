@@ -1,41 +1,37 @@
-class PhpAT84Debug < Formula
+class PhpAT83 < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://github.com/php/php-src/archive/1fc083e526f218b344946985800f7153d31eef3a.tar.gz?commit=1fc083e526f218b344946985800f7153d31eef3a"
-  version "8.4.0"
-  sha256 "62f828888858529686c257a7b83e67b3b93f51d13a6046c05c2c4da752db5a45"
+  url "https://www.php.net/distributions/php-8.3.21.tar.xz"
+  mirror "https://fossies.org/linux/www/php-8.3.21.tar.xz"
+  sha256 "4dfb329f209a552c3716394fc123bb62e80a468b55ce27fc8cb0fd5f30b9dcd6"
   license "PHP-3.01"
-  revision 1
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 62
-    sha256 arm64_sonoma:   "129cf0d98c87e831653d989bd8d28275032fd993b3c206614508886f1e6d907c"
-    sha256 arm64_ventura:  "70cd027a8984ce7e358c76a7d76d9a95ebf603fe5e54baf6a4f97872a269ed68"
-    sha256 arm64_monterey: "fec04bebea1d89953f242002e71b406b5d7bc228fb9a8ba7a910691c57eb4aea"
-    sha256 ventura:        "6c5109c6f5d2c247a34cd2cac154c9049f803d576f6612b3be97a9962cabf62f"
-    sha256 monterey:       "14930f52f85d88ceabab3a1d99af298f3fd05b509d5e7a193960dbf646937c39"
-    sha256 x86_64_linux:   "a8772ffbdb924ec68dd3cd75189df234738982b67aea38d31ae4b6dabfdf7c09"
+    sha256 arm64_sequoia: "2e9f52b8431168b9d0e2b51837062f20b0a5f51e381218b6751fb95da2427aee"
+    sha256 arm64_sonoma:  "c459d2d409e3773663c70decc7d413b1ec80d7f3d383067f20800e8c6e87ebae"
+    sha256 arm64_ventura: "0d0ced118b07109c9153294fd9da8825785964f9df7ca1317269870b93530373"
+    sha256 ventura:       "2e203913cd911c8b570edaa753aee566aa86d169aa254e671264701ec5d0eba8"
+    sha256 x86_64_linux:  "1fa1e074ff10a328f3729793ac79c2ef0ae04a391954c22f835287bbddd6a1ff"
   end
 
   keg_only :versioned_formula
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
   depends_on "argon2"
   depends_on "aspell"
   depends_on "autoconf"
-  depends_on "capstone"
   depends_on "curl"
   depends_on "freetds"
   depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "krb5"
   depends_on "libpq"
   depends_on "libsodium"
@@ -97,6 +93,9 @@ class PhpAT84Debug < Formula
     # Prevent homebrew from hardcoding path to sed shim in phpize script
     ENV["lt_cv_path_SED"] = "sed"
 
+    # Identify build provider in phpinfo()
+    ENV["PHP_BUILD_PROVIDER"] = "Shivam Mathur"
+
     # system pkg-config missing
     ENV["KERBEROS_CFLAGS"] = " "
     if OS.mac?
@@ -126,7 +125,6 @@ class PhpAT84Debug < Formula
       --enable-bcmath
       --enable-calendar
       --enable-dba
-      --enable-debug
       --enable-exif
       --enable-ftp
       --enable-fpm
@@ -148,7 +146,6 @@ class PhpAT84Debug < Formula
       --enable-sysvshm
       --with-apxs2=#{Formula["httpd"].opt_bin}/apxs
       --with-bz2#{headers_path}
-      --with-capstone
       --with-curl
       --with-external-gd
       --with-external-pcre
@@ -321,7 +318,7 @@ class PhpAT84Debug < Formula
   end
 
   def php_version
-    version.to_s.split(".")[0..1].join(".") + "-debug"
+    version.to_s.split(".")[0..1].join(".")
   end
 
   service do
@@ -433,19 +430,6 @@ class PhpAT84Debug < Formula
 end
 
 __END__
-diff --git a/scripts/php-config.in b/scripts/php-config.in
-index 87c20089bb..879299f9cf 100644
---- a/scripts/php-config.in
-+++ b/scripts/php-config.in
-@@ -11,7 +11,7 @@ lib_dir="@orig_libdir@"
- includes="-I$include_dir -I$include_dir/main -I$include_dir/TSRM -I$include_dir/Zend -I$include_dir/ext -I$include_dir/ext/date/lib"
- ldflags="@PHP_LDFLAGS@"
- libs="@EXTRA_LIBS@"
--extension_dir="@EXTENSION_DIR@"
-+extension_dir='@EXTENSION_DIR@'
- man_dir=`eval echo @mandir@`
- program_prefix="@program_prefix@"
- program_suffix="@program_suffix@"
 diff --git a/build/php.m4 b/build/php.m4
 index 3624a33a8e..d17a635c2c 100644
 --- a/build/php.m4

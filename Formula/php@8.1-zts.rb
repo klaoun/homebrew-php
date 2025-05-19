@@ -1,26 +1,30 @@
 class PhpAT81Zts < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://www.php.net/distributions/php-8.1.29.tar.xz"
-  mirror "https://fossies.org/linux/www/php-8.1.29.tar.xz"
-  sha256 "288884af60581d4284baba2ace9ca6d646f72facbd3e3c2dd2acc7fe6f903536"
+  url "https://www.php.net/distributions/php-8.1.32.tar.xz"
+  mirror "https://fossies.org/linux/www/php-8.1.32.tar.xz"
+  sha256 "c582ac682a280bbc69bc2186c21eb7e3313cc73099be61a6bc1d2cd337cbf383"
   license "PHP-3.01"
+  revision 1
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    sha256 arm64_sonoma:   "4f92e281c9d7a1fa66d42001e5bd3cc37af65e69047017e17cfe3f11a73b9ce6"
-    sha256 arm64_ventura:  "7cdcced7c1e50c44f228f2ce3bf9ad50eed6777915bd771aeea099789d3f37f4"
-    sha256 arm64_monterey: "e559906468aea35f529ade707f420a9a62f36bb3971eb951f5c8e89af3edc61d"
-    sha256 ventura:        "84991de6d36a6783d4e55732a232f052830f926fa000e95fe7e4b4c0f48dcf2c"
-    sha256 monterey:       "86cddee51eacb7cd8c8eae32775d43e9bc5014d743596befb939ee7877c1f2a2"
-    sha256 x86_64_linux:   "c30bad1a53a8c18daa1362b960a50a91a771a74d8b4de20dda6923693b06a4a7"
+    sha256 arm64_sequoia: "bf1efe976fba551eca88f486fde546860c8149efef716332241f5b0c32649780"
+    sha256 arm64_sonoma:  "029530f09b12749768035c0cadbe3f512139a9262870027c5dbb178420a3c46f"
+    sha256 arm64_ventura: "917272aebd572148b3f3478ee80ecd20fa712e4b0b70edb8b647dc59d7ad7032"
+    sha256 ventura:       "e2d42119abf3cf68001de9044880969166bc02d615d96f85b59826390994cb4d"
+    sha256 x86_64_linux:  "f27352b57e3ac46ae2641fce36d2e328385d258e877907442797da77906b7b17"
   end
 
   keg_only :versioned_formula
 
+  # Security Support Until 31 Dec 2025
+  # https://www.php.net/supported-versions.php
+  deprecate! date: "2025-12-31", because: :unsupported
+
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -32,7 +36,7 @@ class PhpAT81Zts < Formula
   depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "krb5"
   depends_on "libpq"
   depends_on "libsodium"
@@ -54,10 +58,20 @@ class PhpAT81Zts < Formula
 
   on_macos do
     # PHP build system incorrectly links system libraries
+    # see https://github.com/php/php-src/issues/10680
     patch :DATA
   end
 
   def install
+    # Backport fix for libxml2 >= 2.13
+    # Ref: https://github.com/php/php-src/commit/67259e451d5d58b4842776c5696a66d74e157609
+    inreplace "ext/xml/compat.c",
+              "!= XML_PARSER_ENTITY_VALUE && parser->parser->instate != XML_PARSER_ATTRIBUTE_VALUE)",
+              "== XML_PARSER_CONTENT)"
+
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV["ICU_CXXFLAGS"] = "-std=c++17"
+
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
 
@@ -93,6 +107,9 @@ class PhpAT81Zts < Formula
 
     # Prevent homebrew from hardcoding path to sed shim in phpize script
     ENV["lt_cv_path_SED"] = "sed"
+
+    # Identify build provider in phpinfo()
+    ENV["PHP_BUILD_PROVIDER"] = "Shivam Mathur"
 
     # system pkg-config missing
     ENV["KERBEROS_CFLAGS"] = " "

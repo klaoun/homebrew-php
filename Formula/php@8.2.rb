@@ -1,27 +1,30 @@
 class PhpAT82 < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://www.php.net/distributions/php-8.2.20.tar.xz"
-  mirror "https://fossies.org/linux/www/php-8.2.20.tar.xz"
-  sha256 "4474cc430febef6de7be958f2c37253e5524d5c5331a7e1765cd2d2234881e50"
+  url "https://www.php.net/distributions/php-8.2.28.tar.xz"
+  mirror "https://fossies.org/linux/www/php-8.2.28.tar.xz"
+  sha256 "af8c9153153a7f489153b7a74f2f29a5ee36f5cb2c6c6929c98411a577e89c91"
   license "PHP-3.01"
-  revision 1
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    sha256 arm64_sonoma:   "651bdd92a4dc673184912ae83a729fc0ae70c666683a7db3df7b0ce4f2e27bd0"
-    sha256 arm64_ventura:  "6088f5e85ee1ec4abb4258605fc9e3775eea09314a6cb32d9b98a6938d8fb7e6"
-    sha256 arm64_monterey: "2b36a77a94f9dce738637667fd45be09bb5c60a01a8be4683accd4ffba4bd20e"
-    sha256 ventura:        "b5329294b75e2ebbca05ffcfe6b331e816c3fbe556d17ceed75282d863ac99d6"
-    sha256 monterey:       "5b2c4e59984f01649594b40939c7d3547c9c9d9d8570bb396fb6e4b85ec0caac"
-    sha256 x86_64_linux:   "4b7fb8bbe7ebb9985b863f7ad16e9e02edce397de1d0cda091005a1aa50e76d3"
+    rebuild 1
+    sha256 arm64_sequoia: "9f8c21bc2f87c494b2936a2e47da52a01cd21cba8c3145aac7adaa98487d7f6f"
+    sha256 arm64_sonoma:  "eceddf4832404f19100e2e74014e676f607ea9b498ba4d4264def28eff147773"
+    sha256 arm64_ventura: "bc080bf39abf42bbbcca87bb227946b4c80a9eb5074a4ce053524da74c30d978"
+    sha256 ventura:       "0a3e8301ea8ce0d1f020508bdde02f7ee9e7f64ee32a2d17455a47750dc2c3c1"
+    sha256 x86_64_linux:  "22327e85670abfd648a10bcb61690f3e95f7f2f6d12440c0e399cb95ec6710aa"
   end
 
   keg_only :versioned_formula
 
+  # Security Support Until 31 Dec 2026
+  # https://www.php.net/supported-versions.php
+  deprecate! date: "2026-12-31", because: :unsupported
+
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -33,7 +36,7 @@ class PhpAT82 < Formula
   depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "krb5"
   depends_on "libpq"
   depends_on "libsodium"
@@ -57,12 +60,6 @@ class PhpAT82 < Formula
   on_macos do
     # PHP build system incorrectly links system libraries
     patch :DATA
-  end
-
-  # Remove with 8.2.21
-  patch do
-    url "https://github.com/php/php-src/commit/955d717e242c3433cdf76fa353831aefae530cab.patch?full_index=1"
-    sha256 "bec8a84c3a00e1defd30cd0d7a89c52b000292be79d6ad49f3bf8ba497f2565e"
   end
 
   def install
@@ -101,6 +98,9 @@ class PhpAT82 < Formula
 
     # Prevent homebrew from hardcoding path to sed shim in phpize script
     ENV["lt_cv_path_SED"] = "sed"
+
+    # Identify build provider in phpinfo()
+    ENV["PHP_BUILD_PROVIDER"] = "Shivam Mathur"
 
     # system pkg-config missing
     ENV["KERBEROS_CFLAGS"] = " "

@@ -1,21 +1,20 @@
 class PhpAT72Debug < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/5c72b2e079fff3aadf142a084de94af8133d1c4e.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/269a597ce7d22198bca3745157a45783d86da7ac.tar.gz"
   version "7.2.34"
-  sha256 "a04d562d4ef7ca0ce70209b66519394a26ee3f7187ff652b375d111d34a1fb9f"
+  sha256 "01e8a6bf83a7b5e77ec6b02d5933e12a39911a4f34bfa572d99ac0020c9513b0"
   license "PHP-3.01"
-  revision 11
+  revision 14
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 4
-    sha256 arm64_sonoma:   "8e2366943c193f3b3c88ce656402f43ea3982545ea11985d4b2a6714e5a9f6d8"
-    sha256 arm64_ventura:  "20b3d793923cdb7f48fbd760b9752518db48e51adc56b7f0d1c00875d2a0af69"
-    sha256 arm64_monterey: "f994931398d12951decd4c8aa6a09d90a25751c73da1a5f5f9329d9a3383b3d1"
-    sha256 ventura:        "765011d6cdc3c4ed2ebd81e419ebedb32cd38e400929259784c6c23041fe085a"
-    sha256 monterey:       "81120293467b4992c9e0082a65055b8dd46044e7954517be7b35442afd2078fa"
-    sha256 x86_64_linux:   "a9237e460b7af73b051b39bd3fc816e0fa1412dfeb9d2e0068d40f5cc2dec40e"
+    rebuild 1
+    sha256 arm64_sequoia: "6225f52333e1b912e38b961a877848ae2155d44dcf71f893d6d00fb444e9b691"
+    sha256 arm64_sonoma:  "efac6dd152ce4a5c5751f1366f31df24865c3f78eafeea550ae9058fe024aa9f"
+    sha256 arm64_ventura: "2b11d3fd47f58a534e11058693c404ebbd30f72e8d6d65fed87f0e0010809215"
+    sha256 ventura:       "2a714b8df06fd09e29998a036b989438616721927b67c81e62ad7bcc6505ae9a"
+    sha256 x86_64_linux:  "b143caa7dc080f5f56d1e3bc4c02300a1e6bd25d8d47c4f4f2e4de67b90defd2"
   end
 
   keg_only :versioned_formula
@@ -28,7 +27,7 @@ class PhpAT72Debug < Formula
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -38,13 +37,17 @@ class PhpAT72Debug < Formula
   depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
+  depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "jpeg"
+  depends_on "krb5"
   depends_on "libpng"
   depends_on "libpq"
   depends_on "libsodium"
+  depends_on "libx11"
+  depends_on "libxpm"
   depends_on "libzip"
   depends_on "openldap"
   depends_on "openssl@3"
@@ -80,6 +83,10 @@ class PhpAT72Debug < Formula
     ENV.append "CFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
     ENV.append "CXXFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
 
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV.append "CXX", "-std=c++17"
+    ENV.libcxx if ENV.compiler == :clang
+
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
 
@@ -108,9 +115,6 @@ class PhpAT72Debug < Formula
               "your httpd config to use the prefork MPM"
 
     inreplace "sapi/fpm/php-fpm.conf.in", ";daemonize = yes", "daemonize = no"
-
-    # Required due to icu4c dependency
-    ENV.cxx11
 
     config_path = etc/"php/#{version.major_minor}-debug"
     # Prevent system pear config from inhibiting pear install
@@ -163,11 +167,11 @@ class PhpAT72Debug < Formula
       --with-fpm-user=#{fpm_user}
       --with-fpm-group=#{fpm_group}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
+      --with-gd=#{Formula["gd"].opt_prefix}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
+      --with-icu-dir=#{Formula["icu4c@77"].opt_prefix}
       --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
       --with-kerberos#{headers_path}
       --with-layout=GNU
@@ -194,6 +198,7 @@ class PhpAT72Debug < Formula
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-webp-dir=#{Formula["webp"].opt_prefix}
       --with-xmlrpc
+      --with-xpm-dir=#{Formula["libxpm"].opt_prefix}
     ]
 
     if OS.mac?

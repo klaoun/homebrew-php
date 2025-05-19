@@ -1,21 +1,20 @@
 class PhpAT71 < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/5c2bb2fdf8c4b95523ed2b5ffbdf565fa73ede4e.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/dc8d6277d12d445642139b8a7c104898a5a80f80.tar.gz"
   version "7.1.33"
-  sha256 "819e7b0fcb1ffc143656a0872f3a7668e4472170fa91495f6aaae549dda5fa07"
+  sha256 "3e7a3342f58ca8698635631993a91541d88e7ddf3335e15194d23dafd5bae409"
   license "PHP-3.01"
-  revision 10
+  revision 13
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 4
-    sha256 arm64_sonoma:   "8108ed7a0d782e70212e09f796d5b9436ab110078ba4ad0d9e1ea6aed8a25cb1"
-    sha256 arm64_ventura:  "0d5ebcb43cf8640fa41c088b0fb55b4808a44cd917aca42745fb3243c40f2dcd"
-    sha256 arm64_monterey: "cb8b228e2906718ecfdbfb17e45b349f7b293b562d4a6c886a81071fa7654b35"
-    sha256 ventura:        "538a2c27551bdae3798a12964809c46cdf40df7a387af37b92b2ba8472137916"
-    sha256 monterey:       "8e4dd8e341852a38499a454c713ea7d8ec791c1aee8fddc7663b49eb52e895d1"
-    sha256 x86_64_linux:   "b8c1fdcbc03a6d07c86d42ea00df2a935e265ac58056a5132087bd01d7a2c489"
+    rebuild 1
+    sha256 arm64_sequoia: "a965de52520595e5f737d041269f85e5f8340f3c8fd858b4f869d5f3a0337234"
+    sha256 arm64_sonoma:  "44388314399c57dbd3cc6ab97e003ea77e4f46e588826d7b979ff133af57ac2e"
+    sha256 arm64_ventura: "82174e88e0ac20b5b1b7db9db80f5da7ec5ececb158803ff568786db7e6ad81c"
+    sha256 ventura:       "1f5ccf616e77cb8568db19592cb1030dd556ba3418b2de0294b4624eaea7b7c0"
+    sha256 x86_64_linux:  "375f777064b1882832db5b63dc3290b68285ac02dcb293d5e0657730cd41c042"
   end
 
   keg_only :versioned_formula
@@ -28,7 +27,7 @@ class PhpAT71 < Formula
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -37,13 +36,17 @@ class PhpAT71 < Formula
   depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
+  depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "jpeg"
+  depends_on "krb5"
   depends_on "libpng"
   depends_on "libpq"
   depends_on "libtool"
+  depends_on "libx11"
+  depends_on "libxpm"
   depends_on "libzip"
   depends_on "openldap"
   depends_on "openssl@3"
@@ -79,6 +82,10 @@ class PhpAT71 < Formula
     ENV.append "CFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
     ENV.append "CXXFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
 
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV.append "CXX", "-std=c++17"
+    ENV.libcxx if ENV.compiler == :clang
+
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
 
@@ -106,9 +113,6 @@ class PhpAT71 < Formula
               "your httpd config to use the prefork MPM"
 
     inreplace "sapi/fpm/php-fpm.conf.in", ";daemonize = yes", "daemonize = no"
-
-    # Required due to icu4c dependency
-    ENV.cxx11
 
     config_path = etc/"php/#{php_version}"
     # Prevent system pear config from inhibiting pear install
@@ -159,11 +163,11 @@ class PhpAT71 < Formula
       --with-fpm-user=#{fpm_user}
       --with-fpm-group=#{fpm_group}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
+      --with-gd=#{Formula["gd"].opt_prefix}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
+      --with-icu-dir=#{Formula["icu4c@77"].opt_prefix}
       --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
       --with-kerberos#{headers_path}
       --with-layout=GNU
@@ -188,6 +192,7 @@ class PhpAT71 < Formula
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-webp-dir=#{Formula["webp"].opt_prefix}
       --with-xmlrpc
+      --with-xpm-dir=#{Formula["libxpm"].opt_prefix}
     ]
 
     if OS.mac?

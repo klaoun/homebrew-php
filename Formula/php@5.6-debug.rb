@@ -1,21 +1,20 @@
 class PhpAT56Debug < Formula
   desc "General-purpose scripting language"
   homepage "https://secure.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/30e5da4b4bf8604149f19d4f73ff2220da3205aa.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/2caa81b25793a7c1878530ed80a289b070cfa44f.tar.gz"
   version "5.6.40"
-  sha256 "63619b43de54f884a87f638a41f827c1b978ee3deaa24e0266922f6ce49a78f6"
+  sha256 "b3397170680a3fe9f1ba36298794af232f76c1eb6d647cd0fe5581a5f233ffc3"
   license "PHP-3.01"
-  revision 10
+  revision 13
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 4
-    sha256 arm64_sonoma:   "1ea0e2fbdc7a3867320c9b92a79a2072f3acb72fa5610441db9fb818394fd420"
-    sha256 arm64_ventura:  "b46c9b4e1c152c48035bfe746af86baf9bfede9884075f6176d8331bef45aea4"
-    sha256 arm64_monterey: "f1b41802a21c1d6040b4f53010e955e7b400467611effdb094cf26bb24fb4bd0"
-    sha256 ventura:        "0f8d60b65b744ba70cd85728d971e15cd817dc315dff2e7e041dd0e060833d81"
-    sha256 monterey:       "8c26c36e7f1120949fc0bf4a16d50b604d95e5874169708f1d45c4e4d8836ed1"
-    sha256 x86_64_linux:   "7ef8b722add40b0e4ea5eb7d427a0ee472005342415bc5ab8015cd6d42391ad5"
+    rebuild 1
+    sha256 arm64_sequoia: "847455931f2dcee18a8638fc332f74a27d1bb1289bdadb622044ba2d51e91cf5"
+    sha256 arm64_sonoma:  "f32200a45e52547c8a5d326034d2365f1b3cc06c88c1149c58551e2119168da7"
+    sha256 arm64_ventura: "2f73730f82309a9a7c2f99b7291abe042becd64ec14db3c533e4d92f68992357"
+    sha256 ventura:       "63949ea6399b29baebae52479f458f09164c387ca689c8e8ec86dcded785a4c7"
+    sha256 x86_64_linux:  "1a631fc214d15516eda4b6f9ece3d6638fd8017fff7f8ff73d601e14334c5c2f"
   end
 
   keg_only :versioned_formula
@@ -28,7 +27,7 @@ class PhpAT56Debug < Formula
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -37,13 +36,17 @@ class PhpAT56Debug < Formula
   depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
+  depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "jpeg"
+  depends_on "krb5"
   depends_on "libpng"
   depends_on "libpq"
   depends_on "libtool"
+  depends_on "libx11"
+  depends_on "libxpm"
   depends_on "libzip"
   depends_on "openldap"
   depends_on "openssl@3"
@@ -78,6 +81,13 @@ class PhpAT56Debug < Formula
     ENV.append "CFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
     ENV.append "CXXFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
 
+    # icu4c 61.1 compatibility
+    ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
+
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV.append "CXX", "-std=c++17"
+    ENV.libcxx if ENV.compiler == :clang
+
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
 
@@ -108,12 +118,6 @@ class PhpAT56Debug < Formula
 
     # API compatibility with tidy-html5 v5.0.0 - https://github.com/htacg/tidy-html5/issues/224
     inreplace "ext/tidy/tidy.c", "buffio.h", "tidybuffio.h"
-
-    # Required due to icu4c dependency
-    ENV.cxx11
-
-    # icu4c 61.1 compatibility
-    ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
 
     config_path = etc/"php/#{php_version}"
     # Prevent system pear config from inhibiting pear install
@@ -164,11 +168,11 @@ class PhpAT56Debug < Formula
       --with-fpm-user=#{fpm_user}
       --with-fpm-group=#{fpm_group}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
+      --with-gd=#{Formula["gd"].opt_prefix}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
+      --with-icu-dir=#{Formula["icu4c@77"].opt_prefix}
       --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
       --with-kerberos#{headers_path}
       --with-layout=GNU
@@ -193,6 +197,7 @@ class PhpAT56Debug < Formula
       --with-tidy=#{Formula["tidy-html5"].opt_prefix}
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-xmlrpc
+      --with-xpm-dir=#{Formula["libxpm"].opt_prefix}
     ]
 
     if OS.mac?

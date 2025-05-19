@@ -1,28 +1,27 @@
-class PhpAT84DebugZts < Formula
+class PhpAT85Zts < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://github.com/php/php-src/archive/1fc083e526f218b344946985800f7153d31eef3a.tar.gz?commit=1fc083e526f218b344946985800f7153d31eef3a"
-  version "8.4.0"
-  sha256 "62f828888858529686c257a7b83e67b3b93f51d13a6046c05c2c4da752db5a45"
+  url "https://github.com/php/php-src/archive/00f0175ba91cf1d2ab3b223446c1d8e14a436692.tar.gz?commit=00f0175ba91cf1d2ab3b223446c1d8e14a436692"
+  version "8.5.0"
+  sha256 "ef426248c3a5138623f440bf997ba6c40632a29fa5ad1ed37c1786c2d88b4cb2"
   license "PHP-3.01"
-  revision 1
+  revision 4
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 62
-    sha256 arm64_sonoma:   "9d8c15a76453fc78e849074ddaac2c85ac22b0f8883aaff389c23b3242df5fa5"
-    sha256 arm64_ventura:  "0066ac6cebb4347e923fce6a507cb1df7f1d7f446294457e6cd8326629d38255"
-    sha256 arm64_monterey: "badb5a15a45b09c37e17e403564ab099bbc19c2465a1e66700c76f65e0d439c7"
-    sha256 ventura:        "52129a59b733bf80e9e49314b9ec56ff5a82cfb1902fcca28494c057da69a3e7"
-    sha256 monterey:       "1c3c46bd67e3c7292d4ae06306c8ab6e57b4cc6335f8a2ea1677256bbdf1d56b"
-    sha256 x86_64_linux:   "fa39660e749751cbe6c346d4474d07b1e9835b17082354f24ccd6e986d3a0252"
+    rebuild 4
+    sha256 arm64_sequoia: "f7f05e25c342db5c5fdff2b8c4754578704b5d304d9bc5f0b401192cd9aca112"
+    sha256 arm64_sonoma:  "38c19df87bd25a3dc2bc7e73a01a7ef6b525c99a36accc677240a37e9756bf97"
+    sha256 arm64_ventura: "99d5e59b5767d5fb40282b6df668d7ab1bc9ab5fa8cc44f6ff9490aef4ba0a6d"
+    sha256 ventura:       "28dde8639194191120fd80bbf99ce172bcf9f34e2c2fce1f1a2b9f739b7ebf83"
+    sha256 x86_64_linux:  "f66406bc97372794d4f4289e46b82c2100e4910fb5c979507c57ff03a042ff83"
   end
 
   keg_only :versioned_formula
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -35,7 +34,7 @@ class PhpAT84DebugZts < Formula
   depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "krb5"
   depends_on "libpq"
   depends_on "libsodium"
@@ -65,11 +64,11 @@ class PhpAT84DebugZts < Formula
     system "./buildconf", "--force"
 
     inreplace "configure" do |s|
-      s.gsub! "APACHE_THREADED_MPM=`$APXS_HTTPD -V 2>/dev/null | grep 'threaded:.*yes'`",
-              "APACHE_THREADED_MPM="
-      s.gsub! "APXS_LIBEXECDIR='$(INSTALL_ROOT)'`$APXS -q LIBEXECDIR`",
+      s.gsub! "$APXS_HTTPD -V 2>/dev/null | grep 'threaded:.*yes' >/dev/null 2>&1",
+              "false"
+      s.gsub! "APXS_LIBEXECDIR='$(INSTALL_ROOT)'$($APXS -q LIBEXECDIR)",
               "APXS_LIBEXECDIR='$(INSTALL_ROOT)#{lib}/httpd/modules'"
-      s.gsub! "-z `$APXS -q SYSCONFDIR`",
+      s.gsub! "-z $($APXS -q SYSCONFDIR)",
               "-z ''"
 
       # apxs will interpolate the @ in the versioned prefix: https://bz.apache.org/bugzilla/show_bug.cgi?id=61944
@@ -97,6 +96,9 @@ class PhpAT84DebugZts < Formula
     # Prevent homebrew from hardcoding path to sed shim in phpize script
     ENV["lt_cv_path_SED"] = "sed"
 
+    # Identify build provider in php -v output and phpinfo()
+    ENV["PHP_BUILD_PROVIDER"] = "Shivam Mathur"
+
     # system pkg-config missing
     ENV["KERBEROS_CFLAGS"] = " "
     if OS.mac?
@@ -116,7 +118,7 @@ class PhpAT84DebugZts < Formula
     fpm_user = OS.mac? ? "_www" : "www-data"
     fpm_group = OS.mac? ? "_www" : "www-data"
 
-    args = %W[
+    shared_args = %W[
       --prefix=#{prefix}
       --localstatedir=#{var}
       --sysconfdir=#{config_path}
@@ -126,11 +128,9 @@ class PhpAT84DebugZts < Formula
       --disable-zend-signals
       --enable-bcmath
       --enable-calendar
-      --enable-debug
       --enable-dba
       --enable-exif
       --enable-ftp
-      --enable-fpm
       --enable-gd
       --enable-intl
       --enable-mbregex
@@ -148,15 +148,12 @@ class PhpAT84DebugZts < Formula
       --enable-sysvsem
       --enable-sysvshm
       --enable-zts
-      --with-apxs2=#{Formula["httpd"].opt_bin}/apxs
       --with-bz2#{headers_path}
       --with-capstone
       --with-curl
       --with-external-gd
       --with-external-pcre
       --with-ffi
-      --with-fpm-user=#{fpm_user}
-      --with-fpm-group=#{fpm_group}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
@@ -189,15 +186,33 @@ class PhpAT84DebugZts < Formula
     ]
 
     if OS.mac?
-      args << "--enable-dtrace"
-      args << "--with-ldap-sasl"
-      args << "--with-os-sdkpath=#{MacOS.sdk_path_if_needed}"
+      shared_args << "--enable-dtrace"
+      shared_args << "--with-ldap-sasl"
+      shared_args << "--with-os-sdkpath=#{MacOS.sdk_path_if_needed}"
     else
-      args << "--disable-dtrace"
-      args << "--without-ldap-sasl"
-      args << "--without-ndbm"
-      args << "--without-gdbm"
+      shared_args << "--disable-dtrace"
+      shared_args << "--without-ldap-sasl"
+      shared_args << "--without-ndbm"
+      shared_args << "--without-gdbm"
     end
+
+    args = shared_args.map(&:clone)
+    args << "--with-apxs2=#{Formula["httpd"].opt_bin}/apxs"
+    args << "--enable-fpm"
+    args << "--with-fpm-user=#{fpm_user}"
+    args << "--with-fpm-group=#{fpm_group}"
+
+    system "./configure", *args
+    system "make"
+    system "make", "install"
+
+    # Build libphp in another pass,
+    # because it's not possible to build Apache and embed at the same time
+    args = shared_args.map(&:clone)
+    args << "--disable-cgi"
+    args << "--disable-cli"
+    args << "--disable-phpdbg"
+    args << "--enable-embed"
 
     system "./configure", *args
     system "make"
@@ -323,7 +338,7 @@ class PhpAT84DebugZts < Formula
   end
 
   def php_version
-    version.to_s.split(".")[0..1].join(".") + "-debug-zts"
+    version.to_s.split(".")[0..1].join(".") + "-zts"
   end
 
   service do
@@ -449,10 +464,10 @@ index 87c20089bb..879299f9cf 100644
  program_prefix="@program_prefix@"
  program_suffix="@program_suffix@"
 diff --git a/build/php.m4 b/build/php.m4
-index 3624a33a8e..d17a635c2c 100644
+index 176d4d4144..f71d642bb4 100644
 --- a/build/php.m4
 +++ b/build/php.m4
-@@ -425,7 +425,7 @@ dnl
+@@ -429,7 +429,7 @@ dnl
  dnl Adds a path to linkpath/runpath (LDFLAGS).
  dnl
  AC_DEFUN([PHP_ADD_LIBPATH],[
@@ -461,15 +476,15 @@ index 3624a33a8e..d17a635c2c 100644
      PHP_EXPAND_PATH($1, ai_p)
      ifelse([$2],,[
        _PHP_ADD_LIBPATH_GLOBAL([$ai_p])
-@@ -470,7 +470,7 @@ dnl
- dnl Add an include path. If before is 1, add in the beginning of INCLUDES.
+@@ -476,7 +476,7 @@ dnl paths are prepended to the beginning of INCLUDES.
  dnl
- AC_DEFUN([PHP_ADD_INCLUDE],[
--  if test "$1" != "/usr/include"; then
-+  if test "$1" != "$PHP_OS_SDKPATH/usr/include"; then
-     PHP_EXPAND_PATH($1, ai_p)
-     PHP_RUN_ONCE(INCLUDEPATH, $ai_p, [
-       if test "$2"; then
+ AC_DEFUN([PHP_ADD_INCLUDE], [
+ for include_path in m4_normalize(m4_expand([$1])); do
+-  AS_IF([test "$include_path" != "/usr/include"], [
++  AS_IF([test "$include_path" != "$PHP_OS_SDKPATH/usr/include"], [
+     PHP_EXPAND_PATH([$include_path], [ai_p])
+     PHP_RUN_ONCE([INCLUDEPATH], [$ai_p], [m4_ifnblank([$2],
+       [INCLUDES="-I$ai_p $INCLUDES"],
 diff --git a/configure.ac b/configure.ac
 index 36c6e5e3e2..71b1a16607 100644
 --- a/configure.ac

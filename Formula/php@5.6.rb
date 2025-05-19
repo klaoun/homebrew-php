@@ -1,21 +1,20 @@
 class PhpAT56 < Formula
   desc "General-purpose scripting language"
   homepage "https://secure.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/30e5da4b4bf8604149f19d4f73ff2220da3205aa.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/2caa81b25793a7c1878530ed80a289b070cfa44f.tar.gz"
   version "5.6.40"
-  sha256 "63619b43de54f884a87f638a41f827c1b978ee3deaa24e0266922f6ce49a78f6"
+  sha256 "b3397170680a3fe9f1ba36298794af232f76c1eb6d647cd0fe5581a5f233ffc3"
   license "PHP-3.01"
-  revision 10
+  revision 13
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 4
-    sha256 arm64_sonoma:   "696097787223e911b9bf73a547a2536d5e2ddf47139864d4f97a667cc4482376"
-    sha256 arm64_ventura:  "9929ed6f14311d1fb5c5342aa585284b67ed8c092110455f108479b3607d0a61"
-    sha256 arm64_monterey: "ff81a42d8a038447d1bb18f7bb2cfefd34450880d5ef81163c0702508be19e3c"
-    sha256 ventura:        "65e710e312c8756ec455a0a9a16e474cac43a3147a4fe45fa24ae81c82d2bcd2"
-    sha256 monterey:       "701478cc4a3a67db48da7f49531a812365986c06fb2422d92e199f4b1bd4513f"
-    sha256 x86_64_linux:   "79af3d8d286a6180356125622c0427031cf42981358f558128b54f91904c6bd2"
+    rebuild 1
+    sha256 arm64_sequoia: "258495c6f54e8800e9c0d962282c8597667954c6a7e0342826028dd1041b2ba6"
+    sha256 arm64_sonoma:  "147330a00abb9816f39c872ee47dc49dda49e50e235f1726c8e355e532b861ee"
+    sha256 arm64_ventura: "84d82bfd26944353eee64b39f09916d5641e791e891d454e8518c9cd66f55ba9"
+    sha256 ventura:       "65a65ff1f23d2705dbc37c8539dda41249b17b65ffbb1fe10a218c94b5604a0a"
+    sha256 x86_64_linux:  "802d97bcd6481d92f0a0e60b60ae62bd1a940da2cfa7c488ca4642dac3895f2b"
   end
 
   keg_only :versioned_formula
@@ -28,7 +27,7 @@ class PhpAT56 < Formula
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -37,13 +36,17 @@ class PhpAT56 < Formula
   depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
+  depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "jpeg"
+  depends_on "krb5"
   depends_on "libpng"
   depends_on "libpq"
   depends_on "libtool"
+  depends_on "libx11"
+  depends_on "libxpm"
   depends_on "libzip"
   depends_on "openldap"
   depends_on "openssl@3"
@@ -78,6 +81,13 @@ class PhpAT56 < Formula
     ENV.append "CFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
     ENV.append "CXXFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
 
+    # icu4c 61.1 compatibility
+    ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
+
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV.append "CXX", "-std=c++17"
+    ENV.libcxx if ENV.compiler == :clang
+
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
 
@@ -108,12 +118,6 @@ class PhpAT56 < Formula
 
     # API compatibility with tidy-html5 v5.0.0 - https://github.com/htacg/tidy-html5/issues/224
     inreplace "ext/tidy/tidy.c", "buffio.h", "tidybuffio.h"
-
-    # Required due to icu4c dependency
-    ENV.cxx11
-
-    # icu4c 61.1 compatibility
-    ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
 
     config_path = etc/"php/#{php_version}"
     # Prevent system pear config from inhibiting pear install
@@ -163,11 +167,11 @@ class PhpAT56 < Formula
       --with-fpm-user=#{fpm_user}
       --with-fpm-group=#{fpm_group}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
+      --with-gd=#{Formula["gd"].opt_prefix}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
+      --with-icu-dir=#{Formula["icu4c@77"].opt_prefix}
       --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
       --with-kerberos#{headers_path}
       --with-layout=GNU
@@ -192,6 +196,7 @@ class PhpAT56 < Formula
       --with-tidy=#{Formula["tidy-html5"].opt_prefix}
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-xmlrpc
+      --with-xpm-dir=#{Formula["libxpm"].opt_prefix}
     ]
 
     if OS.mac?

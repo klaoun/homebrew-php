@@ -9,14 +9,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:      
-        operating-system: [macos-14, macos-13, macos-12]
-        php: ['5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4']
+        operating-system: [macos-14]
+        php: ['5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         debug: ['true', 'false']
         phpts: ['ts', 'nts']
     name: Test
     steps:
     - name: Set up Homebrew
-      if: matrix.operating-system == 'macos-12'
       uses: Homebrew/actions/setup-homebrew@master
     - name: Remove PHP
       run: brew uninstall --ignore-dependencies php || true
@@ -43,5 +42,5 @@ jobs:
         brew services start "$formula"
         brew services list
         
-        [ "$formula" = "php@8.3$debug$phpts" ] && formula="php$debug$phpts"
+        [ "$formula" = "php@8.4$debug$phpts" ] && formula="php$debug$phpts"
         cat ~/Library/LaunchAgents/homebrew.mxcl."$formula".plist

@@ -1,21 +1,20 @@
 class PhpAT74 < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/e67b7a23f95e4d239f624a151e2be14102b94a87.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/45fa214ea3a98e645b5a26c53a61b5fee9c39d13.tar.gz"
   version "7.4.33"
-  sha256 "e8ae3ae4351b0924d048567eb729ff908dcb3121a835800a8e26acfcb6020c3f"
+  sha256 "4019629d3fe91b18586676eb8feefabc15ed4530d15fd227f405ab62a7e3b526"
   license "PHP-3.01"
-  revision 6
+  revision 9
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 4
-    sha256 arm64_sonoma:   "ecc93d62be5b653fbc58c53424784641c9570bc83c3dccfc03f5be06a3882692"
-    sha256 arm64_ventura:  "6100ecaab9485e9f7843f0fc019c737e40b6bd07c50604ecadddf82e6276715d"
-    sha256 arm64_monterey: "2e48b5264a8e11c23aa392f303c5a94f8bdf467d63e8a7f5340ba46357a43f7e"
-    sha256 ventura:        "98b46a3307e814b04931f63abc92649c749171146245bdcaaa7d6c483fe0ec44"
-    sha256 monterey:       "fd8ca4daf72fa61e33a1f14fc2372293d14d94e295f5972a88ed8e6bf0d7eee0"
-    sha256 x86_64_linux:   "603b5a71f493468d7bde1ca5a5cf5f09724423e794c3a8b78afe90a000ce24e5"
+    rebuild 1
+    sha256 arm64_sequoia: "7dfe8b4d108eac3c66f30cb7e80115f83e3830d387bb3a421ac7804cca10f789"
+    sha256 arm64_sonoma:  "c1dbadf571ff134de689ab2b38a38673918c0f73330b7300f3d39f437961cac1"
+    sha256 arm64_ventura: "d4d3fb75e96bdb3b375a9cd415e994fc1e176651066a87c708951c58ad54fdde"
+    sha256 ventura:       "ffa3e6aae0d3190510e922294a16527e92e4fce99867946c169799e530db0b13"
+    sha256 x86_64_linux:  "273117dcae6063ec0b1a983ef3d4b7a532e8472c3e2face592c7d3bbb74851a1"
   end
 
   keg_only :versioned_formula
@@ -24,11 +23,11 @@ class PhpAT74 < Formula
   # Although, this was built with back-ported security patches,
   # we recommended to use a currently supported PHP version.
   # For more details, refer to https://www.php.net/eol.php
-  deprecate! date: "2022-11-28", because: :versioned_formula
+  deprecate! date: "2022-11-28", because: :deprecated_upstream
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -40,7 +39,7 @@ class PhpAT74 < Formula
   depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "krb5"
   depends_on "libffi"
   depends_on "libpq"
@@ -73,6 +72,9 @@ class PhpAT74 < Formula
       ENV.append "CFLAGS", "-Wno-incompatible-function-pointer-types"
       ENV.append "LDFLAGS", "-lresolv"
     end
+
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV["ICU_CXXFLAGS"] = "-std=c++17"
 
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"

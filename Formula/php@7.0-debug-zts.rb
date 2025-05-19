@@ -1,21 +1,20 @@
 class PhpAT70DebugZts < Formula
   desc "General-purpose scripting language"
   homepage "https://secure.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/a4ea0fdb28141b4ca8c902d7dfceea9b435fae33.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/d91f3b4e4ff74ed2432010dca9ae9ce5de781670.tar.gz"
   version "7.0.33"
-  sha256 "59e7a3a8c00e063fbc4c1698824751b5ccf6e9432522347073cd8edb0c9ec98e"
+  sha256 "2d80d4186c14aa7e75cca38105359eda808a512a57824462e84e96d5b1be6b5c"
   license "PHP-3.01"
-  revision 1
+  revision 4
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 4
-    sha256 arm64_sonoma:   "a7d028ef954ffcc47ab16232a080dc1f55dc185ef84bf484604c37f5f6987caa"
-    sha256 arm64_ventura:  "0e102e08e6d9ebd16a006bd38b26abc36b1fce5e6f13c9960ebca9c239f78787"
-    sha256 arm64_monterey: "04ec0fcf0d9aa79d1fd1c10e4c9e90467994604c51a19fb0ef262941a0112aab"
-    sha256 ventura:        "df243dccfecf4e7468268e05ace91011bb4e22ad9b55b32104b8126aecd8c174"
-    sha256 monterey:       "2571d7890c350365fb917cc82fb5a65620941d0ee957e7fb690b8dfe14c84519"
-    sha256 x86_64_linux:   "b7b4797723e3abbc50132c01968cc92cef01beb7a2dd2c41f7ac86a001d9db31"
+    rebuild 1
+    sha256 arm64_sequoia: "629c226f356b9fe3380ea4a752e0dd2c80bce6d7968a05f738fd2be95a9af2bb"
+    sha256 arm64_sonoma:  "2d75c192c5d2faf1bfbd731f31c2d8623999e2db2eb58939f2d4741e5a3a1902"
+    sha256 arm64_ventura: "337d9438675513bc80a96d219214347b3076dbb280582015a2c9be09c527fc88"
+    sha256 ventura:       "8372667a68311d6af5f24fd76d5ff2ed17cecdd8409a278a12c24ed11eea9931"
+    sha256 x86_64_linux:  "98b45f3b2423dab21db24563a32a926d70868fab5650a17efeaa1bff5d0557f1"
   end
 
   keg_only :versioned_formula
@@ -28,7 +27,7 @@ class PhpAT70DebugZts < Formula
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -37,13 +36,17 @@ class PhpAT70DebugZts < Formula
   depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
+  depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "jpeg"
+  depends_on "krb5"
   depends_on "libpng"
   depends_on "libpq"
   depends_on "libtool"
+  depends_on "libx11"
+  depends_on "libxpm"
   depends_on "libzip"
   depends_on "openldap"
   depends_on "openssl@3"
@@ -80,6 +83,13 @@ class PhpAT70DebugZts < Formula
     ENV.append "CFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
     ENV.append "CXXFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
 
+    # icu4c 61.1 compatibility
+    ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
+
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV.append "CXX", "-std=c++17"
+    ENV.libcxx if ENV.compiler == :clang
+
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
 
@@ -110,12 +120,6 @@ class PhpAT70DebugZts < Formula
 
     # API compatibility with tidy-html5 v5.0.0 - https://github.com/htacg/tidy-html5/issues/224
     inreplace "ext/tidy/tidy.c", "buffio.h", "tidybuffio.h"
-
-    # Required due to icu4c dependency
-    ENV.cxx11
-
-    # icu4c 61.1 compatibility
-    ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
 
     config_path = etc/"php/#{php_version}"
     # Prevent system pear config from inhibiting pear install
@@ -169,11 +173,11 @@ class PhpAT70DebugZts < Formula
       --with-fpm-user=#{fpm_user}
       --with-fpm-group=#{fpm_group}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
+      --with-gd=#{Formula["gd"].opt_prefix}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
+      --with-icu-dir=#{Formula["icu4c@77"].opt_prefix}
       --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
       --with-kerberos#{headers_path}
       --with-layout=GNU
@@ -198,6 +202,7 @@ class PhpAT70DebugZts < Formula
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-webp-dir=#{Formula["webp"].opt_prefix}
       --with-xmlrpc
+      --with-xpm-dir=#{Formula["libxpm"].opt_prefix}
     ]
 
     if OS.mac?

@@ -1,30 +1,33 @@
 class PhpAT80Debug < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/b9fa9ad2990f1fac1c7b726d8c9f8b58f1c2ac69.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/a53a915ae43fd8b5c06b19742ea33b3d4bcea6d1.tar.gz"
   version "8.0.30"
-  sha256 "2265e11a442da6acdd6dfe9ffb78883a9058ea5a2a05f7a264d6188a0a2c4d1f"
+  sha256 "f3248c57ec0706edab825e00194b2408b11e5fb50bb7cfe9ad098f34f83debdc"
   license "PHP-3.01"
-  revision 3
+  revision 6
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 3
-    sha256 arm64_sonoma:   "6ac3217e8b47d244a5f51dea7b05edd5776bd356380c3e148a20be112b840da4"
-    sha256 arm64_ventura:  "84d5bf78407939292346a14d5c32a47202c75fee6a618938f3a3ce2531c55f51"
-    sha256 arm64_monterey: "f6c64057965c8d08cfa879d9898d096a376c95436634819e719134b1df39c5c6"
-    sha256 ventura:        "ec691376a02e5d0b0d5502495a6809a2eb103273076edb476561fcdd151b788a"
-    sha256 monterey:       "39b01ae3bbdebaa23e8f494216df4a925f52ac12ec8b9149c2bdb7da3d432e14"
-    sha256 x86_64_linux:   "2d00444479e52328d6d0b19a9c6f71b1c9537356f87f9dc4ba00f77a1acafd89"
+    rebuild 1
+    sha256 arm64_sequoia: "3397fc810bed1101606ca839a43f5a3160905241fb8973060b46eae76b14cabb"
+    sha256 arm64_sonoma:  "d9d52ce557aba987ba4cb5c8eb2acc390d460f52e15d87c94ef0ece2c9f896b4"
+    sha256 arm64_ventura: "fa9a0a95d1a5ec68948608a1e1f0d8fc3daf7106cdbc3ca9167d4b604875309b"
+    sha256 ventura:       "751c8f64861917fd58333a64b082f86966a91b461fee1374ca9db8b315259ecd"
+    sha256 x86_64_linux:  "35d0c7f8f023c39978d643fdb64225040e3f9c210c5e6b6a228554b83cd74c3c"
   end
 
   keg_only :versioned_formula
 
-  deprecate! date: "2023-11-26", because: :versioned_formula
+  # This PHP version is not supported upstream as of 2023-11-26.
+  # Although, this was built with back-ported security patches,
+  # we recommended to use a currently supported PHP version.
+  # For more details, refer to https://www.php.net/eol.php
+  deprecate! date: "2023-11-26", because: :deprecated_upstream
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -36,7 +39,7 @@ class PhpAT80Debug < Formula
   depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "krb5"
   depends_on "libpq"
   depends_on "libsodium"
@@ -68,6 +71,9 @@ class PhpAT80Debug < Formula
       ENV.append "CFLAGS", "-Wno-incompatible-function-pointer-types"
       ENV.append "LDFLAGS", "-lresolv"
     end
+
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV["ICU_CXXFLAGS"] = "-std=c++17"
 
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
@@ -104,6 +110,9 @@ class PhpAT80Debug < Formula
 
     # Prevent homebrew from hardcoding path to sed shim in phpize script
     ENV["lt_cv_path_SED"] = "sed"
+
+    # Identify build provider in phpinfo()
+    ENV["PHP_BUILD_PROVIDER"] = "Shivam Mathur"
 
     # system pkg-config missing
     ENV["KERBEROS_CFLAGS"] = " "

@@ -1,21 +1,20 @@
 class PhpAT71Zts < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/5c2bb2fdf8c4b95523ed2b5ffbdf565fa73ede4e.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/dc8d6277d12d445642139b8a7c104898a5a80f80.tar.gz"
   version "7.1.33"
-  sha256 "819e7b0fcb1ffc143656a0872f3a7668e4472170fa91495f6aaae549dda5fa07"
+  sha256 "3e7a3342f58ca8698635631993a91541d88e7ddf3335e15194d23dafd5bae409"
   license "PHP-3.01"
-  revision 1
+  revision 4
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 4
-    sha256 arm64_sonoma:   "25e0ebf514e7089fb9711efa2b008441086d022443ea611782a2f9a7d54fec22"
-    sha256 arm64_ventura:  "04246f05c15b27af2290ad548287c101d9a36d15396f06d34ae74e26daa9f75e"
-    sha256 arm64_monterey: "a505fa07ccbb864a46482875730b2bc487f0c0f9a9e0671ca975a0c8017d695c"
-    sha256 ventura:        "a3a4e54434e73550fc7ed9d6e2e2e40d49a35f86d0c98ca86afce537e802e4fb"
-    sha256 monterey:       "b29c9feb451ebafe1ee4143d263b821e448fd50fe1c9bb6ef06370928d3e6824"
-    sha256 x86_64_linux:   "428299c0d41e6721ccc6ed46e54613764bd7a01b0306c6d7d3ec15b1325e8581"
+    rebuild 1
+    sha256 arm64_sequoia: "6e81d3ecf048335f6a656ff4abaabc8080cffbb4fd5d20ce0289fdd3b976a118"
+    sha256 arm64_sonoma:  "624d1e63d44bf1dfc2fdfd9ae7b1abf6fa569b779e7a571c024d72ac884d0d65"
+    sha256 arm64_ventura: "d26ab2371c343b552fae9c665edd9f8145ba7835ee94a40e7dbce50625a6edd6"
+    sha256 ventura:       "9115882dce360100eeb193a4d441c2859962889b059ae6fd614e58741b4ba3b3"
+    sha256 x86_64_linux:  "c36f78126c408db74e4a3d3c204304db5a06a613fdfc7d2b4226768ed1493927"
   end
 
   keg_only :versioned_formula
@@ -28,7 +27,7 @@ class PhpAT71Zts < Formula
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -37,13 +36,17 @@ class PhpAT71Zts < Formula
   depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
+  depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "jpeg"
+  depends_on "krb5"
   depends_on "libpng"
   depends_on "libpq"
   depends_on "libtool"
+  depends_on "libx11"
+  depends_on "libxpm"
   depends_on "libzip"
   depends_on "openldap"
   depends_on "openssl@3"
@@ -79,6 +82,10 @@ class PhpAT71Zts < Formula
     ENV.append "CFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
     ENV.append "CXXFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
 
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV.append "CXX", "-std=c++17"
+    ENV.libcxx if ENV.compiler == :clang
+
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
 
@@ -106,9 +113,6 @@ class PhpAT71Zts < Formula
               "your httpd config to use the prefork MPM"
 
     inreplace "sapi/fpm/php-fpm.conf.in", ";daemonize = yes", "daemonize = no"
-
-    # Required due to icu4c dependency
-    ENV.cxx11
 
     config_path = etc/"php/#{php_version}"
     # Prevent system pear config from inhibiting pear install
@@ -161,11 +165,11 @@ class PhpAT71Zts < Formula
       --with-fpm-user=#{fpm_user}
       --with-fpm-group=#{fpm_group}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
+      --with-gd=#{Formula["gd"].opt_prefix}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
+      --with-icu-dir=#{Formula["icu4c@77"].opt_prefix}
       --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
       --with-kerberos#{headers_path}
       --with-layout=GNU
@@ -190,6 +194,7 @@ class PhpAT71Zts < Formula
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-webp-dir=#{Formula["webp"].opt_prefix}
       --with-xmlrpc
+      --with-xpm-dir=#{Formula["libxpm"].opt_prefix}
     ]
 
     if OS.mac?

@@ -1,21 +1,20 @@
 class PhpAT73Zts < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/bc9eff539cbcaac98720ab7e8eb73dd5bdffe12c.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/580fe100065f1cd83ac2ad5a6254a1f95dde93ee.tar.gz"
   version "7.3.33"
-  sha256 "83434d34cfeb96c31010fc9e3fdd0e4f67cb3844bf2dffd760afb53270aae286"
+  sha256 "c3bb3db324daed97e2c50f2755462df5b0cb4b912ab5b38c96dc6cfaca92475e"
   license "PHP-3.01"
-  revision 1
+  revision 4
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 4
-    sha256 arm64_sonoma:   "d4e59b8327ca964fd81b08ea9e6b7755f65231f01ec7fd8cf5aaf92806b14940"
-    sha256 arm64_ventura:  "2cf677b6aab5a26248c252e04e24c21d15d4ab14162c308af7ead50f82a5e4ac"
-    sha256 arm64_monterey: "059ef9238c436fe6ae197b4b05d074b997707b6c5581b9afac672cac2db549bb"
-    sha256 ventura:        "c3aae712176c41a9329fe582440f93843f9cca945d76769daa0b4a1cfd40376d"
-    sha256 monterey:       "77063b5da5f72c84523c502f12406d5b8a57de903963a4f93b3a95445cd4b42b"
-    sha256 x86_64_linux:   "07135224a1276a7c11bd95f22bf6970fed9bab08b71c22f37f1c399a2517697e"
+    rebuild 1
+    sha256 arm64_sequoia: "fc177e6f58a01dae12387267d7f83e2c013ad1bd65a43d7b85c0d2613ed36abe"
+    sha256 arm64_sonoma:  "7c061a982d24a33c6da7d85769e6c068d00628a5ad633f885d7f07b170a0da2b"
+    sha256 arm64_ventura: "d4f6a42454e29d93069f8762e741d79e025f47af417759346e2b243837b52552"
+    sha256 ventura:       "2ef4934584ab20ce5db8947de40890b2b20673781b2e1eddcc91430a3d455922"
+    sha256 x86_64_linux:  "a4a9f64d490898c785dafbbc28e976d892d4db80e3389372311981b445563897"
   end
 
   keg_only :versioned_formula
@@ -28,7 +27,7 @@ class PhpAT73Zts < Formula
 
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -38,13 +37,17 @@ class PhpAT73Zts < Formula
   depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
+  depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "jpeg"
+  depends_on "krb5"
   depends_on "libpng"
   depends_on "libpq"
   depends_on "libsodium"
+  depends_on "libx11"
+  depends_on "libxpm"
   depends_on "libzip"
   depends_on "openldap"
   depends_on "openssl@3"
@@ -82,6 +85,10 @@ class PhpAT73Zts < Formula
       inreplace "main/reentrancy.c", "readdir_r(dirp, entry)", "readdir_r(dirp, entry, result)"
     end
 
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV.append "CXX", "-std=c++17"
+    ENV.libcxx if ENV.compiler == :clang
+
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
 
@@ -110,9 +117,6 @@ class PhpAT73Zts < Formula
               "your httpd config to use the prefork MPM"
 
     inreplace "sapi/fpm/php-fpm.conf.in", ";daemonize = yes", "daemonize = no"
-
-    # Required due to icu4c dependency
-    ENV.cxx11
 
     config_path = etc/"php/#{version.major_minor}-zts"
     # Prevent system pear config from inhibiting pear install
@@ -166,11 +170,11 @@ class PhpAT73Zts < Formula
       --with-fpm-user=#{fpm_user}
       --with-fpm-group=#{fpm_group}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
+      --with-gd=#{Formula["gd"].opt_prefix}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
+      --with-icu-dir=#{Formula["icu4c@77"].opt_prefix}
       --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
       --with-kerberos#{headers_path}
       --with-layout=GNU
@@ -197,6 +201,7 @@ class PhpAT73Zts < Formula
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-webp-dir=#{Formula["webp"].opt_prefix}
       --with-xmlrpc
+      --with-xpm-dir=#{Formula["libxpm"].opt_prefix}
     ]
 
     if OS.mac?

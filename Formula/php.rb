@@ -2,11 +2,10 @@ class Php < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
   # Should only be updated if the new version is announced on the homepage, https://www.php.net/
-  url "https://www.php.net/distributions/php-8.3.8.tar.xz"
-  mirror "https://fossies.org/linux/www/php-8.3.8.tar.xz"
-  sha256 "aea358b56186f943c2bbd350c9005b9359133d47e954cfc561385319ae5bb8d7"
+  url "https://www.php.net/distributions/php-8.4.7.tar.xz"
+  mirror "https://fossies.org/linux/www/php-8.4.7.tar.xz"
+  sha256 "e29f4c23be2816ed005aa3f06bbb8eae0f22cc133863862e893515fc841e65e3"
   license "PHP-3.01"
-  revision 1
 
   livecheck do
     url "https://www.php.net/downloads"
@@ -15,12 +14,11 @@ class Php < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    sha256 arm64_sonoma:   "d3615ea3b58564334a00d447d3d4f33770e56c74d041b69258d81c592b582e27"
-    sha256 arm64_ventura:  "eca3ddde0ca92364e5996a65fafeb7429a0faf8eacccc9efd5487d5eb0dd1680"
-    sha256 arm64_monterey: "7fe7b1d0f6972cc5d34194ff7077dc11c2bb36beff0527a63fc795a192738ce9"
-    sha256 ventura:        "27a80fa5e1f71b21f84b8b89604f5c40ac3345f1fd0c76e449579eb9772873f1"
-    sha256 monterey:       "0c8e979d1000c87e017aac7eae1eae9a357dae35eef8db0f6a6419e921ac12e5"
-    sha256 x86_64_linux:   "3f158d3a3f2d86088e53763fdb7516684ae8ce4f48f1f7c9701f9df492a3201e"
+    sha256 arm64_sequoia: "513094e0bf86bd815163230bbf20d8bda017fc824726b3e1a690f82d54ee95e8"
+    sha256 arm64_sonoma:  "2a977660eefdb0145a78b8bc51f23a708a43780c71dba17028f04290094fdf0a"
+    sha256 arm64_ventura: "33b0857c67990102aa7cf21da98d00bb6ed7bf075feaa3715756a64ce3633636"
+    sha256 ventura:       "daeae835045070b322a5bf5621c092dce86321854f3861df7da831a3a33cda1e"
+    sha256 x86_64_linux:  "5107cbc21adc42ec37d3f1fba1754ec2ec13cb2995b462695e88448dbe19c695"
   end
 
   head do
@@ -31,18 +29,19 @@ class Php < Formula
   end
 
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "apr"
   depends_on "apr-util"
   depends_on "argon2"
   depends_on "aspell"
   depends_on "autoconf"
+  depends_on "capstone"
   depends_on "curl"
   depends_on "freetds"
   depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "krb5"
   depends_on "libpq"
   depends_on "libsodium"
@@ -68,22 +67,16 @@ class Php < Formula
     patch :DATA
   end
 
-  # Remove with 8.3.9
-  patch do
-    url "https://raw.githubusercontent.com/shivammathur/php-builder/595dc3f/config/patches/8.3/0045-method-visibility-issue.patch?full_index=1"
-    sha256 "2947d7ad1a54af20c935ec7d804bb45aec8d9e66b7f6a693a26b1ce0f2ed0a35"
-  end
-
   def install
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
 
     inreplace "configure" do |s|
-      s.gsub! "APACHE_THREADED_MPM=`$APXS_HTTPD -V 2>/dev/null | grep 'threaded:.*yes'`",
-              "APACHE_THREADED_MPM="
-      s.gsub! "APXS_LIBEXECDIR='$(INSTALL_ROOT)'`$APXS -q LIBEXECDIR`",
+      s.gsub! "$APXS_HTTPD -V 2>/dev/null | grep 'threaded:.*yes' >/dev/null 2>&1",
+              "false"
+      s.gsub! "APXS_LIBEXECDIR='$(INSTALL_ROOT)'$($APXS -q LIBEXECDIR)",
               "APXS_LIBEXECDIR='$(INSTALL_ROOT)#{lib}/httpd/modules'"
-      s.gsub! "-z `$APXS -q SYSCONFDIR`",
+      s.gsub! "-z $($APXS -q SYSCONFDIR)",
               "-z ''"
     end
 
@@ -106,6 +99,9 @@ class Php < Formula
 
     # Prevent homebrew from hardcoding path to sed shim in phpize script
     ENV["lt_cv_path_SED"] = "sed"
+
+    # Identify build provider in php -v output and phpinfo()
+    ENV["PHP_BUILD_PROVIDER"] = "Shivam Mathur"
 
     # system pkg-config missing
     ENV["KERBEROS_CFLAGS"] = " "
@@ -155,6 +151,7 @@ class Php < Formula
       --enable-sysvshm
       --with-apxs2=#{Formula["httpd"].opt_bin}/apxs
       --with-bz2#{headers_path}
+      --with-capstone
       --with-curl
       --with-external-gd
       --with-external-pcre
@@ -436,10 +433,10 @@ end
 
 __END__
 diff --git a/build/php.m4 b/build/php.m4
-index 3624a33a8e..d17a635c2c 100644
+index 176d4d4144..f71d642bb4 100644
 --- a/build/php.m4
 +++ b/build/php.m4
-@@ -425,7 +425,7 @@ dnl
+@@ -429,7 +429,7 @@ dnl
  dnl Adds a path to linkpath/runpath (LDFLAGS).
  dnl
  AC_DEFUN([PHP_ADD_LIBPATH],[
@@ -448,15 +445,15 @@ index 3624a33a8e..d17a635c2c 100644
      PHP_EXPAND_PATH($1, ai_p)
      ifelse([$2],,[
        _PHP_ADD_LIBPATH_GLOBAL([$ai_p])
-@@ -470,7 +470,7 @@ dnl
- dnl Add an include path. If before is 1, add in the beginning of INCLUDES.
+@@ -476,7 +476,7 @@ dnl paths are prepended to the beginning of INCLUDES.
  dnl
- AC_DEFUN([PHP_ADD_INCLUDE],[
--  if test "$1" != "/usr/include"; then
-+  if test "$1" != "$PHP_OS_SDKPATH/usr/include"; then
-     PHP_EXPAND_PATH($1, ai_p)
-     PHP_RUN_ONCE(INCLUDEPATH, $ai_p, [
-       if test "$2"; then
+ AC_DEFUN([PHP_ADD_INCLUDE], [
+ for include_path in m4_normalize(m4_expand([$1])); do
+-  AS_IF([test "$include_path" != "/usr/include"], [
++  AS_IF([test "$include_path" != "$PHP_OS_SDKPATH/usr/include"], [
+     PHP_EXPAND_PATH([$include_path], [ai_p])
+     PHP_RUN_ONCE([INCLUDEPATH], [$ai_p], [m4_ifnblank([$2],
+       [INCLUDES="-I$ai_p $INCLUDES"],
 diff --git a/configure.ac b/configure.ac
 index 36c6e5e3e2..71b1a16607 100644
 --- a/configure.ac

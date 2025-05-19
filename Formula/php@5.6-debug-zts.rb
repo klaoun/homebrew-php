@@ -1,21 +1,20 @@
 class PhpAT56DebugZts < Formula
   desc "General-purpose scripting language"
   homepage "https://secure.php.net/"
-  url "https://github.com/shivammathur/php-src-backports/archive/30e5da4b4bf8604149f19d4f73ff2220da3205aa.tar.gz"
+  url "https://github.com/shivammathur/php-src-backports/archive/2caa81b25793a7c1878530ed80a289b070cfa44f.tar.gz"
   version "5.6.40"
-  sha256 "63619b43de54f884a87f638a41f827c1b978ee3deaa24e0266922f6ce49a78f6"
+  sha256 "b3397170680a3fe9f1ba36298794af232f76c1eb6d647cd0fe5581a5f233ffc3"
   license "PHP-3.01"
-  revision 1
+  revision 3
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 4
-    sha256 arm64_sonoma:   "76ebcc81039b061ceda1faf8cb0836e215c360c545584d650c220fe5dc4f072f"
-    sha256 arm64_ventura:  "1a62186c4e4796bca8ba867028e37c47eaea55c8b5e092ef82b0836288d3b566"
-    sha256 arm64_monterey: "c8ec9b27f2dee2e7a41ca55e1d16be63c6b26f9b87429555c2279d7727e7dd9d"
-    sha256 ventura:        "3d23778e0435eb5d8fb8c4c8a03f0ee66a26e5aff93bfca06f35a63b4ae5a8b6"
-    sha256 monterey:       "a7772c9d0860c975506f9beaaf7826981aad3f2d2d825738f78c71fdb578d1ef"
-    sha256 x86_64_linux:   "394c421ac2b0dcd8a6806ff0afe0999b302781d98fb1e9912d6e1e594602996a"
+    rebuild 1
+    sha256 arm64_sequoia: "26fedf4b37556787b49561e706f72dca157f45ddbf123bbe01ce4c4b575337ae"
+    sha256 arm64_sonoma:  "eeaa89c2e22c2df6d1ca46a76e9a3d910d230a01951e282be016ce8f35b9dc67"
+    sha256 arm64_ventura: "c7079e89e7ae8ea46d12c6eb712c043ea7f112ad6c6adef97d3a46f8c0d87db1"
+    sha256 ventura:       "d6b6cff81e23b6586986216e3575bb5098b19e145339161341528a777bea46a6"
+    sha256 x86_64_linux:  "68dbfd4ecbc97c9107f514f9ee53ce3d32abef3b81e782fca3576f48064c330f"
   end
 
   keg_only :versioned_formula
@@ -26,28 +25,32 @@ class PhpAT56DebugZts < Formula
   # For more details, refer to https://www.php.net/eol.php
   deprecate! date: "2018-12-31", because: :deprecated_upstream
 
-  depends_on "bison@2.7" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
+  depends_on "shivammathur/php/bison@2.7" => :build
   depends_on "apr"
   depends_on "apr-util"
   depends_on "aspell"
-  depends_on "autoconf@2.69"
   depends_on "curl"
   depends_on "freetds"
   depends_on "freetype"
+  depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "jpeg"
+  depends_on "krb5"
   depends_on "libpng"
   depends_on "libpq"
   depends_on "libtool"
+  depends_on "libx11"
+  depends_on "libxpm"
   depends_on "libzip"
   depends_on "openldap"
   depends_on "openssl@3"
   depends_on "pcre"
+  depends_on "shivammathur/php/autoconf@2.69"
   depends_on "sqlite"
   depends_on "tidy-html5"
   depends_on "unixodbc"
@@ -72,11 +75,19 @@ class PhpAT56DebugZts < Formula
     if DevelopmentTools.clang_build_version >= 1500
       ENV.append "CFLAGS", "-Wno-incompatible-function-pointer-types"
       ENV.append "CFLAGS", "-Wno-implicit-int"
+      ENV.append "CFLAGS", "-Wno-int-conversion"
     end
 
     # Workaround for https://bugs.php.net/80310
     ENV.append "CFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
     ENV.append "CXXFLAGS", "-DU_DEFINE_FALSE_AND_TRUE=1"
+
+    # icu4c 61.1 compatibility
+    ENV.append "CPPFLAGS", "-DU_USING_ICU_NAMESPACE=1"
+
+    # Work around to support `icu4c` 75, which needs C++17.
+    ENV.append "CXX", "-std=c++17"
+    ENV.libcxx if ENV.compiler == :clang
 
     # buildconf required due to system library linking bug patch
     system "./buildconf", "--force"
@@ -166,11 +177,11 @@ class PhpAT56DebugZts < Formula
       --with-fpm-user=#{fpm_user}
       --with-fpm-group=#{fpm_group}
       --with-freetype-dir=#{Formula["freetype"].opt_prefix}
-      --with-gd
+      --with-gd=#{Formula["gd"].opt_prefix}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
-      --with-icu-dir=#{Formula["icu4c"].opt_prefix}
+      --with-icu-dir=#{Formula["icu4c@77"].opt_prefix}
       --with-jpeg-dir=#{Formula["jpeg"].opt_prefix}
       --with-kerberos#{headers_path}
       --with-layout=GNU
@@ -195,6 +206,7 @@ class PhpAT56DebugZts < Formula
       --with-tidy=#{Formula["tidy-html5"].opt_prefix}
       --with-unixODBC=#{Formula["unixodbc"].opt_prefix}
       --with-xmlrpc
+      --with-xpm-dir=#{Formula["libxpm"].opt_prefix}
     ]
 
     if OS.mac?

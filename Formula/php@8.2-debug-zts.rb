@@ -1,27 +1,30 @@
 class PhpAT82DebugZts < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://www.php.net/distributions/php-8.2.20.tar.xz"
-  mirror "https://fossies.org/linux/www/php-8.2.20.tar.xz"
-  sha256 "4474cc430febef6de7be958f2c37253e5524d5c5331a7e1765cd2d2234881e50"
+  url "https://www.php.net/distributions/php-8.2.28.tar.xz"
+  mirror "https://fossies.org/linux/www/php-8.2.28.tar.xz"
+  sha256 "af8c9153153a7f489153b7a74f2f29a5ee36f5cb2c6c6929c98411a577e89c91"
   license "PHP-3.01"
   revision 1
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    sha256 arm64_sonoma:   "58390f8795fc16b7cdb9a8a10dd25b541bfb119ee13f7cc0fdfb12cb8c1b7928"
-    sha256 arm64_ventura:  "42cf6dfc939c19607824466c09c7001aca7ea9866282687d0154b04292f1f63b"
-    sha256 arm64_monterey: "b4c0e36cc9dcb9a6a37a60d0d9597da3467f7d235cb96a5dc14f917d2e952b48"
-    sha256 ventura:        "3eef8c9e9bb092fd91d3f92127bb0630f9ae6d8deac3b677bd59111a3fb793d8"
-    sha256 monterey:       "ad49340c55dbc51619504d8382354005dfde88c4e1cfc53bc2a2db3ea7ae4395"
-    sha256 x86_64_linux:   "2861b1dff8ed70784d1a64859bd1132de37d78596b6de04705b65e18e1566e50"
+    sha256 arm64_sequoia: "41a94a0a1712185ec8da5c39a06453c9f8856010ad16dbc0d1a32cf30f9425db"
+    sha256 arm64_sonoma:  "09725a83ecfc0b55d97243d6017cb38a58ecb85065cc48d3d9b629f9dae72555"
+    sha256 arm64_ventura: "1267ecc78fe3ec2f6cf4891da060ffb24214e76f335651fb009e37580bb5a32f"
+    sha256 ventura:       "50bd4ad3932aa472771191544d82d0de1ab5a3ffe3646e15de8d547502820eb2"
+    sha256 x86_64_linux:  "802d464e1a3591cc54d865b33a755e8952c269a0e59db86a5178877ba9887688"
   end
 
   keg_only :versioned_formula
 
+  # Security Support Until 31 Dec 2026
+  # https://www.php.net/supported-versions.php
+  deprecate! date: "2026-12-31", because: :unsupported
+
   depends_on "bison" => :build
   depends_on "httpd" => [:build, :test]
-  depends_on "pkg-config" => :build
+  depends_on "pkgconf" => :build
   depends_on "re2c" => :build
   depends_on "apr"
   depends_on "apr-util"
@@ -33,7 +36,7 @@ class PhpAT82DebugZts < Formula
   depends_on "gd"
   depends_on "gettext"
   depends_on "gmp"
-  depends_on "icu4c"
+  depends_on "icu4c@77"
   depends_on "krb5"
   depends_on "libpq"
   depends_on "libsodium"
@@ -57,12 +60,6 @@ class PhpAT82DebugZts < Formula
   on_macos do
     # PHP build system incorrectly links system libraries
     patch :DATA
-  end
-
-  # Remove with 8.2.21
-  patch do
-    url "https://github.com/php/php-src/commit/955d717e242c3433cdf76fa353831aefae530cab.patch?full_index=1"
-    sha256 "bec8a84c3a00e1defd30cd0d7a89c52b000292be79d6ad49f3bf8ba497f2565e"
   end
 
   def install
@@ -102,6 +99,9 @@ class PhpAT82DebugZts < Formula
     # Prevent homebrew from hardcoding path to sed shim in phpize script
     ENV["lt_cv_path_SED"] = "sed"
 
+    # Identify build provider in phpinfo()
+    ENV["PHP_BUILD_PROVIDER"] = "Shivam Mathur"
+
     # system pkg-config missing
     ENV["KERBEROS_CFLAGS"] = " "
     if OS.mac?
@@ -121,7 +121,7 @@ class PhpAT82DebugZts < Formula
     fpm_user = OS.mac? ? "_www" : "www-data"
     fpm_group = OS.mac? ? "_www" : "www-data"
 
-    args = %W[
+    shared_args = %W[
       --prefix=#{prefix}
       --localstatedir=#{var}
       --sysconfdir=#{config_path}
@@ -135,7 +135,6 @@ class PhpAT82DebugZts < Formula
       --enable-dba
       --enable-exif
       --enable-ftp
-      --enable-fpm
       --enable-gd
       --enable-intl
       --enable-mbregex
@@ -152,14 +151,11 @@ class PhpAT82DebugZts < Formula
       --enable-sysvshm
       --enable-zend-max-execution-timers
       --enable-zts
-      --with-apxs2=#{Formula["httpd"].opt_bin}/apxs
       --with-bz2#{headers_path}
       --with-curl
       --with-external-gd
       --with-external-pcre
       --with-ffi
-      --with-fpm-user=#{fpm_user}
-      --with-fpm-group=#{fpm_group}
       --with-gettext=#{Formula["gettext"].opt_prefix}
       --with-gmp=#{Formula["gmp"].opt_prefix}
       --with-iconv#{headers_path}
@@ -192,14 +188,40 @@ class PhpAT82DebugZts < Formula
     ]
 
     if OS.mac?
-      args << "--enable-dtrace"
-      args << "--with-ldap-sasl"
-      args << "--with-os-sdkpath=#{MacOS.sdk_path_if_needed}"
+      shared_args << "--enable-dtrace"
+      shared_args << "--with-ldap-sasl"
+      shared_args << "--with-os-sdkpath=#{MacOS.sdk_path_if_needed}"
     else
-      args << "--disable-dtrace"
-      args << "--without-ldap-sasl"
-      args << "--without-ndbm"
-      args << "--without-gdbm"
+      shared_args << "--disable-dtrace"
+      shared_args << "--without-ldap-sasl"
+      shared_args << "--without-ndbm"
+      shared_args << "--without-gdbm"
+    end
+
+    args = shared_args.map(&:clone)
+    args << "--with-apxs2=#{Formula["httpd"].opt_bin}/apxs"
+    args << "--enable-fpm"
+    args << "--with-fpm-user=#{fpm_user}"
+    args << "--with-fpm-group=#{fpm_group}"
+
+    system "./configure", *args
+    system "make"
+    system "make", "install"
+
+    # Build libphp in another pass,
+    # because it's not possible to build Apache and embed at the same time
+    args = shared_args.map(&:clone)
+    args << "--disable-cgi"
+    args << "--disable-cli"
+    args << "--disable-phpdbg"
+
+    if OS.mac?
+      args << "--disable-opcache-jit"
+      args << "--enable-embed=static"
+      args << "--enable-shared=no"
+      args << "--enable-static"
+    else
+      args << "--enable-embed"
     end
 
     system "./configure", *args

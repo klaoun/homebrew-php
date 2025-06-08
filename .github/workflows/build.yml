@@ -23,6 +23,7 @@ env:
   HOMEBREW_NO_AUTO_UPDATE: 1
   HOMEBREW_NO_INSTALL_FROM_API: 1
   HOMEBREW_RELOCATABLE_INSTALL_NAMES: 1
+  HOMEBREW_ARM64_TESTING: 1
 
 concurrency:
   group: "build-${{ github.ref }}"
@@ -166,6 +167,7 @@ jobs:
     outputs:
       syntax-only: ${{ steps.check-labels.outputs.syntax-only }}
       linux-runner: ${{ steps.check-labels.outputs.linux-runner }}
+      linux-arm64-runner: ${{ steps.check-labels.outputs.linux-arm64-runner }}
       fail-fast: ${{ steps.check-labels.outputs.fail-fast }}
       test-dependents: ${{ steps.check-labels.outputs.test-dependents }}
       timeout-minutes: ${{ steps.check-labels.outputs.timeout-minutes }}
@@ -209,6 +211,11 @@ jobs:
           - runner: 'macos-13'
             cleanup: true
           - runner: ${{needs.set-environment.outputs.linux-runner}}
+            container: ${{fromJson(needs.set-environment.outputs.container)}}
+            workdir: /github/home
+            cleanup: false
+            timeout: 4320
+          - runner: ${{needs.set-environment.outputs.linux-arm64-runner}}
             container: ${{fromJson(needs.set-environment.outputs.container)}}
             workdir: /github/home
             cleanup: false

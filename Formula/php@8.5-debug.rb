@@ -1,21 +1,21 @@
 class PhpAT85Debug < Formula
   desc "General-purpose scripting language"
   homepage "https://www.php.net/"
-  url "https://github.com/php/php-src/archive/cce0efdff87de3cea3e2326cdb36c8adc58a4bdb.tar.gz?commit=cce0efdff87de3cea3e2326cdb36c8adc58a4bdb"
+  url "https://github.com/php/php-src/archive/c1ed6088a6c0630da12af444e6d3c844900b0aa0.tar.gz?commit=c1ed6088a6c0630da12af444e6d3c844900b0aa0"
   version "8.5.0"
-  sha256 "29e31c06fb83501583b79e3abf57c836966e21641ef015ae716ad74a5db6ef4c"
+  sha256 "7cb7d1c289a6a5a737c06185ee04baa5abfd49df68e65b3cd9bc2afc292feda1"
   license "PHP-3.01"
   revision 3
 
   bottle do
     root_url "https://ghcr.io/v2/shivammathur/php"
-    rebuild 41
-    sha256 arm64_sequoia: "5239ef9312d3ed574f1fcd842b81d36337452ea61548c6f754b97cf4d83430c2"
-    sha256 arm64_sonoma:  "2da2b54906f0102fe47d40162da27025f957f6a5497176d366b2657b12a4b83c"
-    sha256 arm64_ventura: "b0a886b4fb9c723253896790d1ac55fd195077272048604f8c78ff0bc5bf159f"
-    sha256 ventura:       "34672f32d9c23a751027af897eb9560c4fc35c7eba10dcd85b14dc48dfae56ce"
-    sha256 arm64_linux:   "6a2c7c0d8491d35ef4461eb35d795cabf12a0e889eb5c4fcce86fee2e69aa5d6"
-    sha256 x86_64_linux:  "5cd9e87ee9d22f565a578ad3c6254955f402e7b28e71ebc78ad41e33fad6a4d8"
+    rebuild 55
+    sha256 arm64_sequoia: "487e0db3c8eb4562c705bc8fec3b8e0102c9b5a94805576cee62a9d8a4d0c2ae"
+    sha256 arm64_sonoma:  "8ef9f07b6bea9a9f654758791a1b569505e08d059ae4e15c7463b51ea19dcbc5"
+    sha256 arm64_ventura: "863d932b57f4d1e46d6f16724281cd8b4932e5928e3b9118174a11268e90fd17"
+    sha256 ventura:       "34cac89a7e94a5357705582c9668b89a04e00d0edb32d63100368ff90d094213"
+    sha256 arm64_linux:   "fac53396833a6b77e0cb287447140c1407879bf04e13bff52bf8f197fd0bc6d3"
+    sha256 x86_64_linux:  "e97145766f6f445bee08a084ae1c3655e84786849a2ad5675dcfe39fa93b2aec"
   end
 
   keg_only :versioned_formula
@@ -406,7 +406,7 @@ class PhpAT85Debug < Formula
       pid = fork do
         exec Formula["httpd"].opt_bin/"httpd", "-X", "-f", "#{testpath}/httpd.conf"
       end
-      sleep 3
+      sleep 5
 
       assert_match expected_output, shell_output("curl -s 127.0.0.1:#{port}")
 
